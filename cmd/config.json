@@ -1,0 +1,6 @@
+{
+    "host": "127.0.0.1",
+    "port": ":5000",
+    "client-port": ":5000",
+    "sqlite": "./adventures_with_strangers.db"
+}

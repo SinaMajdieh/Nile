@@ -99,6 +99,10 @@ func (server *FibServer) SetRoutes() {
 func (server *FibServer) InitApi() {
 	server.app.Post("/api/login", api.LoginHandler)
 	server.app.Post("/api/register", api.RegisterHandler)
+
+	server.app.Post("/api/add-to-cart", api.AddToCart)
+	server.app.Get("/api/cart", api.GetMyCart)
+	server.app.Delete("/api/drop-cart", api.EmptyCart)
 }
 
 // Listen And Serve the Go Fiber framework

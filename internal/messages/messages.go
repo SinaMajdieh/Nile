@@ -23,3 +23,13 @@ const (
 	UserNameTaken          = "username was taken"
 	PasswordMatchProblem   = "password does not match the confirmation"
 )
+
+// Shopping cart related messages
+const (
+	EmptyCart = "Cart is empty"
+)
+
+// General request errors
+const (
+	BodyParser = "Couldn't parse body to the model"
+)

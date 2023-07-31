@@ -26,7 +26,9 @@ const (
 
 // Shopping cart related messages
 const (
-	EmptyCart = "Cart is empty"
+	EmptyCart        = "Cart is empty"
+	ItemNotInCart    = "This item is not in your cart"
+	ItemRemovalError = "Either you don't have this item in your cart or you don't have that amount"
 )
 
 // General request errors

@@ -22,43 +22,31 @@ func AddToCart(c *fiber.Ctx) error {
 		return generateStatus(c, false, messages.BodyParser)
 	}
 
-	logger.Println(*item)
-
 	// Get existing cart
 	// Catch errors
 	cart, err := getCart(c)
+
 	if nil != err {
 		logger.Println(err)
 		return generateStatus(c, false, err.Error())
 	}
 
-	// Ensure cart exists
-	if nil == cart {
-		// Add item to the newly created cart model
-		cart = new(models.Cart)
-		cart.Items = append(cart.Items, *item)
-		setCart(c, cart)
-		return generateStatus(c, true, "added to the empty cart")
-	}
-
 	// Add expiration date for cart cookie
 	cart.Expires = time.Now().AddDate(0, 3, 0)
 
-	// item already exists
-	for index, cartItem := range cart.Items {
-		if cartItem.ProductId == item.ProductId {
-			// Add more of the same product
-			cart.Items[index].Quantity += item.Quantity
-			setCart(c, cart)
-			//return
-			return generateStatus(c, true, "added to the previous ones")
-		}
+	// Item is not already in the cart
+	item_index := cart.LookupItem(item.ProductId)
+	if item_index == -1 {
+		// Add it to the cart
+		cart.PutItem(item)
+	} else {
+		cart.AddMoreOfItem(item_index, item.Quantity)
 	}
 
-	// Add item to the cart
-	cart.Items = append(cart.Items, *item)
+	// Update the caret cookie
 	setCart(c, cart)
 	return generateStatus(c, true, "added item")
+
 }
 
 // Removes item from cart if exists
@@ -74,8 +62,6 @@ func RemoveFromCart(c *fiber.Ctx) error {
 		return generateStatus(c, false, messages.BodyParser)
 	}
 
-	logger.Println(*item)
-
 	// Get existing cart
 	// Catch errors
 	cart, err := getCart(c)
@@ -84,37 +70,22 @@ func RemoveFromCart(c *fiber.Ctx) error {
 		return generateStatus(c, false, err.Error())
 	}
 
-	// Ensure cart exists
-	if nil == cart {
-		// cart is empty
-		// there is nothing to remove
-		logger.Println(messages.EmptyCart)
-		return generateStatus(c, false, messages.EmptyCart)
-	}
-
 	// Add expiration date for cart cookie
 	cart.Expires = time.Now().AddDate(0, 3, 0)
 
-	// item is in cart
-	for index, cartItem := range cart.Items {
-		if cartItem.ProductId == item.ProductId {
-			// Ensure there are enough of them to remove
-			if cart.Items[index].Quantity < item.Quantity {
-				return generateStatus(c, false, "cant remove you dont have enough")
-			} else if cart.Items[index].Quantity == item.Quantity {
-				cart.Items[index] = cart.Items[len(cart.Items)-1] // Copy last element to index i.
-				cart.Items[len(cart.Items)-1] = *new(models.Item) // Erase last element (write zero value).
-				cart.Items = cart.Items[:len(cart.Items)-1]       // Truncate slice.
-			} else {
-				cart.Items[index].Quantity -= item.Quantity
-			}
-			setCart(c, cart)
-			//return
-			return generateStatus(c, true, "removed")
-		}
+	// Lookup for the item in the cart
+	item_index := cart.LookupItem(item.ProductId)
+	if item_index == -1 {
+		logger.Println(messages.ItemNotInCart)
+		return generateStatus(c, false, messages.ItemNotInCart)
 	}
 
-	return generateStatus(c, false, "item does not exist")
+	// Remove item
+	if cart.RemoveItem(item_index, item.Quantity) {
+		return generateStatus(c, true, "Removed")
+	}
+
+	return generateStatus(c, false, messages.ItemRemovalError)
 }
 
 // returns the user shopping cart
@@ -126,12 +97,6 @@ func GetMyCart(c *fiber.Ctx) error {
 	if err != nil {
 		logger.Println(err.Error())
 		return generateStatus(c, false, err.Error())
-	}
-
-	// Cart does not exists
-	if nil == cart {
-		logger.Println("empty shopping cart")
-		return generateStatus(c, false, "empty")
 	}
 
 	// Convert cart to json

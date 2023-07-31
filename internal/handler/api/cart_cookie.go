@@ -51,8 +51,9 @@ func getCart(c *fiber.Ctx) (*models.Cart, error) {
 
 	// Ensure cookie exists
 	if jsonString == "" {
-		logger.Println("No shopping cart")
-		return nil, nil
+		logger.Println("No shopping cart, making an empty one")
+		cart := new(models.Cart)
+		return cart, nil
 	}
 
 	// Create a new empty cart model
